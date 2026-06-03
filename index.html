@@ -1314,6 +1314,11 @@
                 Send some sats if this was useful. Any amount. Even 1 sat is proof that Lightning works and that you
                 tried it.
             </p>
+            <p
+                style="color:var(--muted); font-size:0.82rem; line-height:1.65; margin-top:0.75rem; font-family:'Space Mono',monospace;">
+                Tap a button below to copy the real Lightning LNURL for this address. Then paste it into your
+                Lightning wallet to send sats to the real address.
+            </p>
             <div class="lnurl-box" id="lnurlBox" onclick="copyLnurl()">
                 <div id="lnurlText">
                     lnurl1dp68gurn8ghj7urjd9kkzmpwdejhgtewwajkcmpdddhx7amw9akxuatjd3cz7atvw3exzcnpwserzl5jft7</div>
@@ -1454,14 +1459,16 @@
 
         // ── TIP MODAL ──
         function openTipModal(sats) {
+            const lnurl = document.getElementById('lnurlText').textContent.trim();
             document.getElementById('modalTitle').textContent = `// SEND ${sats.toLocaleString()} SATS`;
             document.getElementById('modalContent').innerHTML = `
-    <p style="font-size:0.88rem; color:var(--muted); margin-bottom:1.25rem; line-height:1.65;">Scan with any Lightning wallet.</p>
+    <p style="font-size:0.88rem; color:var(--muted); margin-bottom:1.25rem; line-height:1.65;">This uses the real Lightning LNURL shown on the page.</p>
     <div class="mock-qr">[ QR ]<br>${sats.toLocaleString()} sats</div>
-    <div class="modal-invoice">${genFakeInvoice(sats)}</div>
-    <p class="modal-note">Or copy the LNURL from the page directly.</p>
-    <button class="btn-primary" style="width:100%; margin-top:1.5rem; display:block; text-align:center; border:none; cursor:pointer; font-size:0.78rem;" onclick="closeModal()">Done</button>
+    <div class="modal-invoice">${lnurl}</div>
+    <p class="modal-note">This LNURL has been copied to clipboard. Paste it into your Lightning wallet to send the selected amount.</p>
+    <button class="btn-primary" style="width:100%; margin-top:1.5rem; display:block; text-align:center; border:none; cursor:pointer; font-size:0.78rem;" onclick="copyInvoice('${lnurl}')">Copy LNURL</button>
   `;
+            navigator.clipboard.writeText(lnurl).catch(() => { });
             openModal();
         }
 
