@@ -1,64 +1,86 @@
 # ₿ITCOIN 101 — Lightning-Native Education Site
 
+> **This project is purely for learning and educational purposes.** It is not financial advice, not a financial product, and not affiliated with any Bitcoin organisation. It exists to make Bitcoin concepts accessible to curious people everywhere.
+
 ## Stack
 - **Frontend**: Vanilla HTML/CSS/JS (no build step needed)
 - **Backend**: Python + FastAPI
 - **Lightning**: LND via REST API
+- **Deployed on**: Render
 
 ## Structure
 ```
 bitcoin-site/
-├── index.html          ← The full frontend (self-contained)
-└── backend/
-    ├── main.py         ← FastAPI + LND integration
-    └── .env.example    ← Rename to .env and fill in your LND details
+├── index.html          ← Full frontend (self-contained, no build step)
+├── app.py              ← FastAPI backend + LND integration
+├── requirements.txt    ← Python dependencies
+└── .env.example        ← Rename to .env and fill in your LND details
 ```
 
+## What This Teaches
+- Why Bitcoin has a fixed supply and why that matters
+- How the blockchain works (without the hype)
+- What Proof of Work actually does
+- The halving schedule and why it's significant
+- Self-custody: why "not your keys, not your coins" is not a slogan
+- How Lightning Network payment channels work
+- What a real BOLT11 invoice looks like
+
 ## Frontend Features
-- Witty, educational Bitcoin content (5 core concepts)
-- One concept locked behind a 1-sat Lightning paywall
-- Lightning channel simulator (interactive demo)
-- Mock invoice generator (wire up to backend for real invoices)
-- Bitcoin quiz (5 questions)
+- Witty, educational Bitcoin content — 4 core concepts
+- One concept locked behind a 1-sat Lightning paywall (demo-able without real LND)
+- Interactive Lightning channel simulator — drag, send, watch balances shift
+- Mock BOLT11 invoice generator (wire to real LND node for production)
+- Bitcoin quiz — 5 questions with real explanations
 - Tip jar with LNURL + sat amount buttons
-- Copy-to-clipboard LNURL
+- Fully responsive — mobile, tablet, desktop
 
 ## Backend API Endpoints
 | Method | Path | Description |
 |--------|------|-------------|
-| GET | /health | Check LND connectivity |
-| POST | /invoice/create | Generate a BOLT11 invoice |
-| POST | /invoice/check | Check if invoice is paid |
-| POST | /unlock/concept | Unlock a concept after payment |
-| GET | /lnurl/tip | Return LNURL for tip jar |
-| POST | /simulate/payment | Channel simulator (no LND needed) |
+| GET | `/` | Serves the frontend (`index.html`) |
+| GET | `/health` | Check LND node connectivity |
+| POST | `/invoice/create` | Generate a real BOLT11 invoice via LND |
+| POST | `/invoice/check` | Check if an invoice has been paid |
+| POST | `/unlock/concept` | Gate content unlock behind confirmed payment |
+| GET | `/lnurl/tip` | Return LNURL for the tip jar |
+| POST | `/simulate/payment` | Channel simulator (no LND node required) |
 
 ## Setup
 
-### 1. Backend
+### 1. Clone & install
 ```bash
-cd backend
-cp .env.example .env
-# Edit .env with your LND node details
+git clone <your-repo>
+cd bitcoin-site
 
-pip install fastapi uvicorn httpx python-dotenv
-uvicorn main:app --reload --port 8000
+pip install fastapi uvicorn httpx python-dotenv gunicorn
 ```
 
-### 2. Connect Frontend to Backend
-In `index.html`, replace the mock invoice generator with:
+### 2. Configure environment
+```bash
+cp .env.example .env
+# Edit .env with your LND node details
+```
+
+### 3. Run locally
+```bash
+uvicorn app:app --reload --port 8000
+```
+
+### 4. Connect frontend to real LND invoices
+In `index.html`, replace the mock invoice generator with a real fetch:
 ```javascript
-const res = await fetch('http://localhost:8000/invoice/create', {
+const res = await fetch('/invoice/create', {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
   body: JSON.stringify({ sats: 1, memo: 'Unlock Concept 04' })
 });
 const { payment_request, payment_hash } = await res.json();
-// Show payment_request as QR code
+// Render payment_request as a QR code
 // Poll /invoice/check every 2s with payment_hash
 ```
 
-### 3. Polling for Payment
+### 5. Poll for payment confirmation
 ```javascript
 async function pollPayment(payment_hash, onPaid) {
   const interval = setInterval(async () => {
@@ -76,17 +98,28 @@ async function pollPayment(payment_hash, onPaid) {
 }
 ```
 
+## Deploying to Render
+1. Push repo to GitHub
+2. Create a new **Web Service** on Render, connect your repo
+3. Set **Start Command** to:
+   ```
+   python -m uvicorn app:app --host 0.0.0.0 --port $PORT
+   ```
+4. Add your environment variables from `.env` in Render → Environment
+5. Deploy — done
+
 ## LND Node Options
-- **Umbrel** (self-hosted, easy): https://umbrel.com
-- **Voltage** (cloud, managed): https://voltage.cloud
-- **Start9** (self-hosted): https://start9.com
-- **Raspiblitz** (DIY, Raspberry Pi): https://raspiblitz.org
+If you want real Lightning payments (not just the demo):
+- **Umbrel** (self-hosted, beginner-friendly): https://umbrel.com
+- **Voltage** (cloud-hosted, managed): https://voltage.cloud
+- **Start9** (self-hosted, privacy-focused): https://start9.com
+- **Raspiblitz** (DIY on Raspberry Pi): https://raspiblitz.org
 
-## Deploying
-Frontend: Any static host (Netlify, Vercel, Render, Cloudflare Pages)
-Backend: Railway, Render, Fly.io, or your own server
+## Production Notes
+- Replace the in-memory `paid_invoices` set with Redis or a proper DB
+- Set `LND_TLS_VERIFY=false` for self-signed certs (default on most home nodes)
+- Restrict `allow_origins` in CORS middleware to your actual domain
+- The 1-sat paywall is intentional UX — it proves Lightning works in real life and creates a micro-commitment from the learner
 
-## Notes
-- The 1-sat paywall is intentional UX — it proves Lightning works and creates a micro-commitment
-- For production: replace the in-memory `paid_invoices` set with Redis or a DB
-- TLS: LND uses a self-signed cert by default — set `LND_TLS_VERIFY=false` for local dev
+## Disclaimer
+This site is an educational resource. Nothing here is financial advice. Do your own research. Don't trust, verify.
