@@ -12,8 +12,9 @@ Requires a running LND node (local, Voltage, Umbrel, etc.)
 Set env vars in a .env file (see below).
 """
 
+from fastapi.responses import FileResponse
 import os, hashlib, time, httpx, base64
-from fastapi import FastAPI, HTTPException, BackgroundTasks
+from fastapi import FastAPI, HTTPException, BackgroundTasks, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from dotenv import load_dotenv
@@ -66,6 +67,10 @@ class CheckPaymentRequest(BaseModel):
     payment_hash: str
 
 # ── ROUTES ──────────────────────────────────────────────────────────────────
+
+@app.get("/")
+async def homepage():
+    return FileResponse("index.html")
 
 @app.get("/health")
 async def health():
